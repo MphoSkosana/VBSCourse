@@ -81,151 +81,167 @@ END Class
 'Main Script
 
 
-'declare
-DIM accNumber
-DIM recAccNumber
-DIM amount
-DIM continueLoop, invalidAcc, invalidRecAcc
-DIM strOption
-DIM balance
 
+Dim objAccount, fullName, accNumber
+Dim continueLoop, choice
+Dim amount, transferAcc
+Dim balance
 
-'Loop control variable for options
-continueLoop = TRUE
+Set objAccount = New Account
 
-'Loop control variable for account validation
-invalidAcc = TRUE
+'================================================================================
+' Main Menu / Program Start
+'================================================================================
+continueLoop = True
 
+'Ask user for full name and account number
+fullName = InputBox("Enter your full name:")
 
-SET objAccount = NEW Account
-
-'get full name 
-objAccount.strFullName = InputBox("Please enter your full name:")
-
-'initialise account to 1000
 objAccount.dblBalance = 1000
 
-balance = objAccount.dblBalance
+accNumber = ""
 
-'get the owner's account number
-DO WHILE invalidAcc
+Do
+    accNumber = InputBox("Enter your account number (7 to 10 digits):")
 
-    accNumber = Trim(InputBox("Please enter your account number:"))
-
-    IF Len(accNumber) >= 7 AND Len(accNumber) <= 10 THEN
-
-        objAccount.strAccNum = accNumber
-
-        invalidAcc = FALSE
-
-    ELSE
-
+    
+    If Len(accNumber) >= 7 And Len(accNumber) <= 10 Then
+        
+        If IsNumeric(accNumber) Then
+            Exit Do
+        Else
+            MsgBox "Invalid account number! Please enter digits only."
+        End If
+    Else
         MsgBox "Invalid account number! Please try again"
+    End If
+Loop
 
-    END IF
+objAccount.strFullName = fullName 
+objAccount.strAccNum = accNumber
 
-LOOP
+'================================================================================
+' Display menu loop
+'================================================================================
+Do While continueLoop
 
+    choice = InputBox( _
+        "Account Application Menu:" & vbNewLine & _
+        "1. Withdrawal" & vbNewLine & _
+        "2. Deposit" & vbNewLine & _
+        "3. Transfer" & vbNewLine & _
+        "4. Check balance" & vbNewLine & _
+        "5. Exit" & vbNewLine & _
+        "Choose an option (1-5):")
 
-'keeping track of the balance
-MsgBox "Starting Balance: R" & balance
+    Select Case choice
 
+        Case "1"  'Withdrawal
 
-'program starts
-DO WHILE continueLoop
+            amount = 0
+            Do
+                amount = InputBox("Enter withdrawal amount:")
 
-    'get option from user
-    strOption = InputBox("Please select an option below: " & vbNewLine & _
-                        "1 - Withdrawal" & vbNewLine & _
-                        "2 - Deposit" & vbNewLine & _
-                        "3 - Transfer" & vbNewLine & _
-                        "4 - Check Balance" & vbNewLine & _
-                        "5 - Exit" )
+                If Not IsNumeric(amount) Then
+                    MsgBox "Invalid amount! Please enter a numeric value."
+                ElseIf CDbl(amount) <= 0 Then
+                    MsgBox "Withdrawal amount must be greater than 0."
+                ElseIf CDbl(amount) > objAccount.checkBalance() Then
+                    MsgBox "Insufficient funds! You cannot withdraw more than your balance."
+                Else
+                    Exit Do
+                End If
 
-    'validate options
-    IF strOption = "5" THEN
+            Loop
 
-        continueLoop = FALSE
+            
+            objAccount.withdrawal CDbl(amount)
 
-    ELSEIF strOption = "1" OR strOption = "2" OR strOption = "3" OR strOption = "4" THEN
+            
+            MsgBox "Withdrawal Complete!" & vbNewLine & _
+                   objAccount.getAccountDetails()
 
-        SELECT CASE(strOption)
-        CASE "1"
+        Case "2"  'Deposit
 
-            DO
+            amount = 0
+            Do
+                amount = InputBox("Enter deposit amount:")
 
-                amount = CDbl(InputBox("Enter the amount you wish to withdraw:"))
+                If Not IsNumeric(amount) Then
+                    MsgBox "Invalid amount! Please enter a numeric value."
+                ElseIf CDbl(amount) <= 0 Then
+                    MsgBox "Deposit amount must be greater than 0."
+                Else
+                    Exit Do
+                End If
+            Loop
 
-            LOOP UNTIL amount > 0 AND amount <= balance
+            
+            objAccount.deposit CDbl(amount)
 
-            balance = objAccount.withdrawal(amount)
+            
+            MsgBox "Deposit Successful!" & vbNewLine & _
+                   objAccount.getAccountDetails()
 
-            MsgBox "Withdrawal Complete!" & vbNewLine & "New Balance: R" & balance
+        Case "3"  'Transfer
 
-        CASE "2"
+            'Receiving account number validation (7-10 digits)
+            transferAcc = ""
+            Do
+                transferAcc = InputBox("Enter the receiving account number (7 to 10 digits):")
 
-            DO
+                If Len(transferAcc) >= 7 And Len(transferAcc) <= 10 Then
+                    If IsNumeric(transferAcc) Then
+                        Exit Do
+                    Else
+                        MsgBox "Invalid receiving account number! Please enter digits only."
+                    End If
+                Else
+                    MsgBox "Invalid account number length! Please try again"
+                End If
+            Loop
 
-                amount = CDbl(InputBox("Enter the amount you wish to deposit:"))
+            amount = 0
+            Do
+                amount = InputBox("Enter transfer amount:")
 
-            LOOP UNTIL amount > 0
+                If Not IsNumeric(amount) Then
+                    MsgBox "Invalid amount! Please enter a numeric value."
+                ElseIf CDbl(amount) <= 0 Then
+                    MsgBox "Transfer amount must be greater than 0."
+                ElseIf CDbl(amount) > objAccount.checkBalance() Then
+                    MsgBox "Insufficient funds! You cannot transfer more than your balance."
+                Else
+                    Exit Do
+                End If
 
-            balance = objAccount.deposit(amount)
+            Loop
 
-            MsgBox "Deposit Complete!" & vbNewLine & "New Balance: R" & balance
+            'Your original style transfer call (sender subtracts)
+            objAccount.transfer CDbl(amount), transferAcc
 
-        CASE "3"
-            're-initialise control variable
-            invalidRecAcc = TRUE
+            
+            MsgBox "Transfer Successful!" & vbNewLine & _
+                   "Recipient Account Number: ACC-" & transferAcc & vbNewLine & _
+                   "Amount Transferred: R" & CDbl(amount) & vbNewLine & _
+                   objAccount.getAccountDetails()
 
-            'validate account number 
-            DO WHILE invalidRecAcc
+        Case "4"  'Check balance
 
-                recAccNumber = Trim(InputBox("Please enter beneficiary account number:"))
+            
+            MsgBox "Your Balance:" & vbNewLine & objAccount.getAccountDetails()
 
-                IF Len(recAccNumber) >= 7 AND Len(recAccNumber) <= 10 THEN
+        Case "5"  'Exit
 
-                    objAccount.strRecAccNum = recAccNumber
+            continueLoop = False
+            MsgBox "Thank you for using the system!"
+            
+        Case Else
+            MsgBox "Invalid choice! Please choose an option between 1 and 5."
 
-                    invalidRecAcc = FALSE
+    End Select
 
-                ELSE
-
-                    MsgBox "Invalid account number! Please try again"
-
-                END IF
-
-            LOOP
-
-            'get amount
-            DO
-
-                amount = CDbl(InputBox("Enter the amount you wish to transfer:"))
-
-            LOOP UNTIL amount > 0 AND amount <= balance
-
-            balance = objAccount.transfer(amount, recAccNumber)
-
-            MsgBox "Transfer Complete!" & vbNewLine & _
-                    "Beneficiary Account Number: " & objAccount.getRecAccountNumber() & vbNewLine & _
-                    "Amount Transferred: R" & amount & vbNewLine & _
-                    "Balance: R" & balance
-
-        CASE "4"
-
-            balance = objAccount.checkBalance()
-
-            MsgBox "Current Balance: R" & balance
-
-        END SELECT
-
-    ELSE
-
-        MsgBox "Invalid option! Please select a valid option."
-
-    END IF
-
-LOOP
+Loop
 
 
 MsgBox (objAccount.getAccountDetails())
